@@ -242,6 +242,54 @@ class PKUSafeRLHF(BaseFormatter):
         ], {}
 
 
+@register_template('HOMEWORK')
+class HOMEWORK(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict]:
+        metrics = raw_sample['overall_response']
+        better_response = raw_sample[f'response_{int(metrics)}']
+        worse_response = raw_sample[f'response_{1 if int(metrics) == 2 else 2}']
+        prompt = raw_sample['question']
+
+        better_conversation = [
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': better_response},
+        ]
+
+        worse_conversation = [
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': worse_response},
+        ]
+
+        meta_info = {
+            'better_response': better_response,
+            'worse_response': worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict]:
+        prompt = raw_sample['question']
+        return [
+            {'role': 'user', 'content': prompt},
+        ], {}
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict]:
+        prompt = raw_sample['question']
+        response = raw_sample['response_1']  # Using response_1 as default for supervised learning
+        return [
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': response},
+        ], {}
+
+
 @register_template('Aligner')
 class Aligner(BaseFormatter):
     system_prompt: str = ''
