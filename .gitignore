@@ -424,3 +424,6 @@ tags
 local_scripts/
 
 *.gradio/
+
+# data
+/data/
