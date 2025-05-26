@@ -427,3 +427,6 @@ local_scripts/
 
 # data
 /data/
+
+# nohup
+/nohup.out
