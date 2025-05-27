@@ -15,6 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 MODEL_NAME_OR_PATH="output/qwen_2_5_rm/slice_end" # model path - use trained model
 
