@@ -15,27 +15,28 @@
 # limitations under the License.
 # ==============================================================================
 
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
-MODEL_NAME_OR_PATH="Qwen/Qwen2.5-0.5B-Instruct" # model path
+MODEL_NAME_OR_PATH="data/Qwen2.5-0.5B-Instruct" # model path
 
-TRAIN_DATASETS="../assets/text_to_text/preference" # dpo dataset path
-TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
+TRAIN_DATASETS="data/align_anything_t2t" # rm dataset path
+TRAIN_TEMPLATE="HOMEWORK" # dataset template
 TRAIN_SPLIT="train" # split the dataset
 
 OUTPUT_ROOT_DIR=$OUTPUT_ROOT_DIR
 
 if [ -z "$OUTPUT_ROOT_DIR" ]; then
     echo "OUTPUT_ROOT_DIR is not set"
-    OUTPUT_ROOT_DIR="../outputs"
+    OUTPUT_ROOT_DIR="outputs"
 fi
 
 OUTPUT_DIR="${OUTPUT_ROOT_DIR}/qwen_2_5_dpo" # output dir
 
 # For wandb online logging
-export WANDB_API_KEY=""
+export WANDB_API_KEY="94a37f280ad8b0c5600c5c4e12f4719f3150a6bc"
 
 # Source the setup script
-source ./setup.sh
+source scripts/setup.sh
 
 # Execute deepspeed command
 deepspeed \

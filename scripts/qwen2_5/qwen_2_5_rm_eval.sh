@@ -17,11 +17,11 @@
 
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
-MODEL_NAME_OR_PATH="data/Qwen2.5-0.5B-Instruct" # model path
+MODEL_NAME_OR_PATH="output/qwen_2_5_rm/slice_end" # model path - use trained model
 
-TRAIN_DATASETS="data/align_anything_t2t" # rm dataset path
-TRAIN_TEMPLATE="HOMEWORK" # dataset template
-TRAIN_SPLIT="train" # split the dataset
+EVAL_DATASETS="data/align_anything_t2t" # dataset path
+EVAL_TEMPLATE="HOMEWORK" # dataset template
+EVAL_SPLIT="validation" # split the dataset, validation
 
 OUTPUT_ROOT_DIR=$OUTPUT_ROOT_DIR
 
@@ -30,7 +30,7 @@ if [ -z "$OUTPUT_ROOT_DIR" ]; then
     OUTPUT_ROOT_DIR="output"
 fi
 
-OUTPUT_DIR="${OUTPUT_ROOT_DIR}/qwen_2_5_rm" # output dir
+OUTPUT_DIR="${OUTPUT_ROOT_DIR}/qwen_2_5_rm_eval" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY="94a37f280ad8b0c5600c5c4e12f4719f3150a6bc"
@@ -43,8 +43,9 @@ deepspeed \
      --master_port ${MASTER_PORT} \
      --module align_anything.trainers.text_to_text.rm \
      --model_name_or_path ${MODEL_NAME_OR_PATH} \
-     --train_template ${TRAIN_TEMPLATE} \
-     --train_datasets ${TRAIN_DATASETS} \
-     --train_split ${TRAIN_SPLIT} \
+     --eval_datasets ${EVAL_DATASETS} \
+     --eval_template ${EVAL_TEMPLATE} \
+     --eval_split ${EVAL_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
+     --save_total_limit 1 \
      --epochs 1 
