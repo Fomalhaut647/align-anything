@@ -430,3 +430,6 @@ local_scripts/
 
 # nohup
 /nohup.out
+
+# test
+/test.py
