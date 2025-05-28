@@ -38,7 +38,7 @@ export WANDB_API_KEY="94a37f280ad8b0c5600c5c4e12f4719f3150a6bc"
 # Source the setup script
 source scripts/setup.sh
 
-# Execute deepspeed command
+# Execute deepspeed command for evaluation only
 deepspeed \
      --master_port ${MASTER_PORT} \
      --module align_anything.trainers.text_to_text.rm \
@@ -48,4 +48,13 @@ deepspeed \
      --eval_split ${EVAL_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
      --save_total_limit 1 \
-     --epochs 1 
+     --epochs 0 \
+     --eval_only
+
+echo ""
+echo "========================================"
+echo "Evaluation completed!"
+echo "Reward analysis results saved to: ${OUTPUT_DIR}/reward_analysis/"
+echo "To create additional visualizations, run:"
+echo "python scripts/analyze_reward_scores.py --data_dir ${OUTPUT_DIR}/reward_analysis"
+echo "========================================" 

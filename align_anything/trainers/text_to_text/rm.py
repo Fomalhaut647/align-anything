@@ -19,6 +19,11 @@ import argparse
 import os
 import sys
 from typing import Any
+import json
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from collections import defaultdict
 
 import deepspeed
 import torch
@@ -152,6 +157,137 @@ class RMTrainer(SupervisedTrainerBase):
             'train/lr': self.model.optimizer.param_groups[0]['lr'],
         }
 
+    def save_reward_scores(self, texts, scores, output_dir, file_prefix="reward_scores"):
+        """Save text and corresponding reward scores to JSON file."""
+        if not is_main_process():
+            return
+            
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Combine texts and scores
+        data = []
+        for text, score in zip(texts, scores):
+            data.append({
+                "text": text,
+                "reward_score": float(score)
+            })
+        
+        # Save to JSON file
+        output_file = os.path.join(output_dir, f"{file_prefix}.json")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        self.logger.print(f"Saved reward scores to {output_file}")
+        return output_file
+
+    def visualize_reward_distribution(self, chosen_scores, rejected_scores, output_dir):
+        """Visualize the distribution of reward scores for chosen vs rejected responses."""
+        if not is_main_process():
+            return
+            
+        # Set plotting style
+        try:
+            plt.style.use('seaborn-v0_8')
+        except OSError:
+            try:
+                plt.style.use('seaborn')
+            except OSError:
+                plt.style.use('default')
+        
+        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+        
+        # Convert to numpy arrays
+        chosen_scores = np.array(chosen_scores)
+        rejected_scores = np.array(rejected_scores)
+        
+        # 1. Histogram comparison
+        axes[0, 0].hist(chosen_scores, bins=50, alpha=0.7, label='Chosen', color='green', density=True)
+        axes[0, 0].hist(rejected_scores, bins=50, alpha=0.7, label='Rejected', color='red', density=True)
+        axes[0, 0].set_xlabel('Reward Score')
+        axes[0, 0].set_ylabel('Density')
+        axes[0, 0].set_title('Reward Score Distribution: Chosen vs Rejected')
+        axes[0, 0].legend()
+        axes[0, 0].grid(True, alpha=0.3)
+        
+        # 2. Box plot comparison
+        box_data = [chosen_scores, rejected_scores]
+        box_labels = ['Chosen', 'Rejected']
+        box_colors = ['lightgreen', 'lightcoral']
+        
+        bp = axes[0, 1].boxplot(box_data, labels=box_labels, patch_artist=True)
+        for patch, color in zip(bp['boxes'], box_colors):
+            patch.set_facecolor(color)
+        axes[0, 1].set_ylabel('Reward Score')
+        axes[0, 1].set_title('Box Plot: Reward Score Distribution')
+        axes[0, 1].grid(True, alpha=0.3)
+        
+        # 3. KDE plot
+        axes[1, 0].hist(chosen_scores, bins=30, alpha=0.5, label='Chosen', color='green', density=True)
+        axes[1, 0].hist(rejected_scores, bins=30, alpha=0.5, label='Rejected', color='red', density=True)
+        
+        # Add KDE curves
+        from scipy.stats import gaussian_kde
+        if len(chosen_scores) > 1:
+            kde_chosen = gaussian_kde(chosen_scores)
+            x_range = np.linspace(min(min(chosen_scores), min(rejected_scores)), 
+                                max(max(chosen_scores), max(rejected_scores)), 200)
+            axes[1, 0].plot(x_range, kde_chosen(x_range), 'g-', linewidth=2, label='Chosen KDE')
+        
+        if len(rejected_scores) > 1:
+            kde_rejected = gaussian_kde(rejected_scores)
+            axes[1, 0].plot(x_range, kde_rejected(x_range), 'r-', linewidth=2, label='Rejected KDE')
+        
+        axes[1, 0].set_xlabel('Reward Score')
+        axes[1, 0].set_ylabel('Density')
+        axes[1, 0].set_title('Kernel Density Estimation')
+        axes[1, 0].legend()
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        # 4. Score difference distribution
+        score_diff = chosen_scores - rejected_scores
+        axes[1, 1].hist(score_diff, bins=50, alpha=0.7, color='blue', density=True)
+        axes[1, 1].axvline(x=0, color='black', linestyle='--', linewidth=2, label='No Difference')
+        axes[1, 1].axvline(x=np.mean(score_diff), color='red', linestyle='-', linewidth=2, 
+                          label=f'Mean Diff: {np.mean(score_diff):.3f}')
+        axes[1, 1].set_xlabel('Score Difference (Chosen - Rejected)')
+        axes[1, 1].set_ylabel('Density')
+        axes[1, 1].set_title('Distribution of Score Differences')
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        # Save the plot
+        os.makedirs(output_dir, exist_ok=True)
+        plot_file = os.path.join(output_dir, 'reward_score_visualization.png')
+        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        # Print statistics
+        self.logger.print("\n" + "="*60)
+        self.logger.print("REWARD SCORE STATISTICS")
+        self.logger.print("="*60)
+        self.logger.print(f"Chosen responses:")
+        self.logger.print(f"  Mean: {np.mean(chosen_scores):.4f}")
+        self.logger.print(f"  Std:  {np.std(chosen_scores):.4f}")
+        self.logger.print(f"  Min:  {np.min(chosen_scores):.4f}")
+        self.logger.print(f"  Max:  {np.max(chosen_scores):.4f}")
+        
+        self.logger.print(f"\nRejected responses:")
+        self.logger.print(f"  Mean: {np.mean(rejected_scores):.4f}")
+        self.logger.print(f"  Std:  {np.std(rejected_scores):.4f}")
+        self.logger.print(f"  Min:  {np.min(rejected_scores):.4f}")
+        self.logger.print(f"  Max:  {np.max(rejected_scores):.4f}")
+        
+        self.logger.print(f"\nScore Differences (Chosen - Rejected):")
+        self.logger.print(f"  Mean: {np.mean(score_diff):.4f}")
+        self.logger.print(f"  Std:  {np.std(score_diff):.4f}")
+        self.logger.print(f"  Accuracy: {np.mean(score_diff > 0)*100:.2f}%")
+        self.logger.print("="*60)
+        
+        self.logger.print(f"Visualization saved to {plot_file}")
+        return plot_file
+
     @torch.no_grad()
     def eval(self) -> dict[str, Any]:
         """Evaluate the model on the evaluation dataset."""
@@ -174,6 +310,11 @@ class RMTrainer(SupervisedTrainerBase):
         )
 
         rewards = []
+        chosen_texts = []
+        rejected_texts = []
+        chosen_scores = []
+        rejected_scores = []
+        
         batch = None
         for batch in eval_dataloader:
             output = self.model(**self.infer_batch(batch))
@@ -186,6 +327,25 @@ class RMTrainer(SupervisedTrainerBase):
             num_total_predictions += batch_size
 
             rewards.extend([higher_end_rewards, lower_end_rewards])
+            
+            # Extract texts for visualization
+            (
+                better_input_ids,  # size = (B, L)
+                worse_input_ids,  # size = (B, L)
+            ) = batch['input_ids'].chunk(chunks=2, dim=0)
+            
+            # Decode texts
+            batch_chosen_texts = self.tokenizer.batch_decode(
+                better_input_ids, skip_special_tokens=True
+            )
+            batch_rejected_texts = self.tokenizer.batch_decode(
+                worse_input_ids, skip_special_tokens=True
+            )
+            
+            chosen_texts.extend(batch_chosen_texts)
+            rejected_texts.extend(batch_rejected_texts)
+            chosen_scores.extend(higher_end_rewards.cpu().tolist())
+            rejected_scores.extend(lower_end_rewards.cpu().tolist())
 
         if batch is None:
             self.logger.print('WARNING: `eval_dataloader` is empty.')
@@ -203,6 +363,21 @@ class RMTrainer(SupervisedTrainerBase):
         dist.gather(rewards, gathered_rewards, dst=0)
         if is_main_process():
             rewards = torch.cat(gathered_rewards, dim=0)
+
+        # Save reward scores and create visualizations (only on main process)
+        if is_main_process():
+            output_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, 'reward_analysis')
+            
+            # Save chosen and rejected texts with scores
+            self.save_reward_scores(chosen_texts, chosen_scores, output_dir, "chosen_responses")
+            self.save_reward_scores(rejected_texts, rejected_scores, output_dir, "rejected_responses")
+            
+            # Create visualizations
+            try:
+                self.visualize_reward_distribution(chosen_scores, rejected_scores, output_dir)
+            except ImportError as e:
+                self.logger.print(f"Warning: Could not create visualizations due to missing dependency: {e}")
+                self.logger.print("Please install matplotlib and seaborn: pip install matplotlib seaborn scipy")
 
         self.model.train()
         if self.cfgs.train_cfgs.gradient_checkpointing:
@@ -261,6 +436,14 @@ class RMTrainer(SupervisedTrainerBase):
 
     def train(self) -> None:
         """Train the model."""
+        # Check if we should only evaluate
+        eval_only = getattr(self.cfgs.train_cfgs, 'eval_only', False) or self.cfgs.train_cfgs.epochs == 0
+        
+        if eval_only:
+            self.logger.print('***** Running evaluation only *****')
+            self.logger.log(self.eval(), step=0)
+            return
+        
         self.logger.print('***** Running training *****')
 
         progress_bar = tqdm(
