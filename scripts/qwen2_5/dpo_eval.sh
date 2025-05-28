@@ -33,7 +33,7 @@ echo "评估数据路径: ${EVALUATION_DATA}"
 echo "输出目录: ${OUTPUT_DIR}"
 
 # 执行Python评估脚本
-python scripts/qwen2_5/qwen_2_5_rm_dpo_eval.py \
+python scripts/qwen2_5/dpo_eval.py \
     --reward_model_path ${REWARD_MODEL_PATH} \
     --evaluation_data ${EVALUATION_DATA} \
     --output_dir ${OUTPUT_DIR} \
