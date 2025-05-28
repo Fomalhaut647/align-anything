@@ -1,0 +1,27 @@
+Statistical Summary:
+
+Chosen Responses:
+  Count: 999
+  Mean: 0.4728
+  Std: 2.8300
+  Min: -5.7188
+  Max: 10.8750
+  Q25: -1.7734
+  Q75: 2.3594
+
+Rejected Responses:
+  Count: 999
+  Mean: -0.7016
+  Std: 2.5501
+  Min: -6.0938
+  Max: 9.8125
+  Q25: -2.5469
+  Q75: 0.8418
+
+Comparison:
+  Mean Difference: 1.1744
+  Accuracy: 75.68%
+  
+Statistical Tests:
+  Mann-Whitney U (p-value): 6.4591e-22
+  Kolmogorov-Smirnov (p-value): 1.0392e-15
