@@ -1,0 +1,40 @@
+=== DPO模型与基础模型回答差异分析报告 ===
+
+总样本数: 64
+完全相同的回答: 0 (0.0%)
+不同的回答: 64 (100.0%)
+
+=== 文本相似度统计 ===
+平均相似度: 0.201
+相似度标准差: 0.089
+相似度中位数: 0.203
+最低相似度: 0.011
+最高相似度: 0.515
+
+=== 长度统计 ===
+基础模型平均回答长度: 789 字符
+DPO模型平均回答长度: 825 字符
+平均长度比例(DPO/Base): 3.81
+长度比例标准差: 7.02
+长度比例中位数: 1.00
+
+=== 长度分类统计 ===
+dpo_much_longer: 21 (32.8%)
+dpo_longer: 5 (7.8%)
+similar_length: 16 (25.0%)
+dpo_shorter: 10 (15.6%)
+dpo_much_shorter: 12 (18.8%)
+
+=== 相似度分类统计 ===
+very_similar: 0 (0.0%)
+similar: 0 (0.0%)
+somewhat_similar: 1 (1.6%)
+different: 33 (51.6%)
+very_different: 30 (46.9%)
+
+=== 示例统计 ===
+most_similar: 0 个示例
+most_different: 5 个示例
+dpo_much_longer: 5 个示例
+dpo_much_shorter: 5 个示例
+identical: 0 个示例

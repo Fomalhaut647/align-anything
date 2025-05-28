@@ -1,6 +1,4 @@
 ##### Project Specification #####
-output/
-outputs/
 wandb/
 BIG-bench/
 align_anything/evaluation/tasks/
@@ -427,9 +425,6 @@ local_scripts/
 
 # data
 /data/
-
-# nohup
-/nohup.out
 
 # test
 /test.py
