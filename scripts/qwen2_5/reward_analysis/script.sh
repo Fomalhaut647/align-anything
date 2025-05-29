@@ -22,7 +22,7 @@ EVALUATION_DATA="scripts/qwen2_5/evaluation_results/evaluation_results.json" # �
 OUTPUT_DIR="scripts/qwen2_5/reward_analysis" # 输出目录
 
 # For wandb online logging
-export WANDB_API_KEY="94a37f280ad8b0c5600c5c4e12f4719f3150a6bc"
+export WANDB_API_KEY="Your wandb api key"
 
 # Source the setup script
 source scripts/setup.sh
